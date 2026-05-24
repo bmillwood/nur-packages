@@ -5,51 +5,57 @@
 let
   pkgs = import nixpkgs config;
   inherit (pkgs) lib;
-  version = "1.112.0";
+  # main at time of writing, because no tag has support for node > 20 yet (and
+  # node 20 is EOL)
+  version = "bf83f165eef5c0ba36aca9f02d11e261bf29223d";
   src = pkgs.fetchFromGitHub {
     owner = "bluesky-social";
     repo = "social-app";
     rev = version;
-    hash = "sha256-DW8UlQZzh7AVH5IvcHwt2KguyxGtuYbvPN/gqeY+OVQ=";
+    hash = "sha256-zAbnISQYfjs3icbloRRY6JcsHgvFdengdBu/GblsSLc=";
   };
-  nodejs_pin = pkgs.nodejs_20;
-  # stdenv with cc, which we use for better-sqlite
+  nodejs_pin = pkgs.nodejs_24;
+  # pinning per https://nixos.org/manual/nixpkgs/unstable/#javascript-pnpm
+  pnpm = pkgs.pnpm_11;
   static = pkgs.stdenv.mkDerivation {
-    pname = "bsky-app-tweaked";
-    inherit src version;
-    yarnOfflineCache = pkgs.fetchYarnDeps {
-      yarnLock = "${src}/yarn.lock";
-      hash = "sha256-80TqOxX94kMyGVGu9cKMfZknGYuFj15An8XeydDvPRc=";
+    pname = "bsky-app-static";
+    inherit version src;
+
+    nativeBuildInputs = [
+      nodejs_pin
+      pnpm
+      pkgs.pnpmConfigHook
+      #pkgs.python3
+    ];
+
+    pnpmDeps = pkgs.fetchPnpmDeps {
+      pname = "bsky-app-static";
+      inherit version src;
+      inherit pnpm;
+      fetcherVersion = 3;
+      hash = "sha256-bCZDuV0QMrcJnVzvwGTh6x9Wx8OXKo8tUme3qTk7t5U=";
     };
 
     preConfigure = ''
-      export npm_config_nodedir=${nodejs_pin}
-      export PATH=/build/source/node_modules/.bin:$PATH
-
-      expected=v$(cat .nvmrc)
+      expected=v$(cut -d. -f1 .nvmrc)
       actual=$(${nodejs_pin}/bin/node --version | cut -d. -f1)
       if [ "$expected" != "$actual" ]
       then
-        echo "node --version ($actual) doesn't match .nvmrc ($expected)" >&2
+        echo "node --version ($actual) doesn't match .nvmrc ($expected) from ${src} (${src.rev})" >&2
         exit 1
       fi
     '';
 
     buildPhase = ''
-      yarn --offline postinstall
-      yarn --offline build-web
+      # insist on our own node binary
+      rm -f node_modules/.bin/node
+
+      make build-web SHELL=${pkgs.bash}/bin/bash
     '';
 
     installPhase = ''
       cp -r bskyweb $out/
     '';
-
-    nativeBuildInputs = [
-      pkgs.yarnConfigHook
-
-      nodejs_pin
-      pkgs.python3
-    ];
   };
   server = pkgs.buildGoModule {
     pname = "bskyweb";
