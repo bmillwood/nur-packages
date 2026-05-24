@@ -16,7 +16,7 @@ let
   };
   nodejs_pin = pkgs.nodejs_24;
   # pinning per https://nixos.org/manual/nixpkgs/unstable/#javascript-pnpm
-  pnpm = pkgs.pnpm_10;
+  pnpm = pkgs.pnpm_11;
   static = pkgs.stdenv.mkDerivation {
     pname = "bsky-app-static";
     inherit version src;
