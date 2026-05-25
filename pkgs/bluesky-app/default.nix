@@ -1,34 +1,38 @@
-{ nixpkgs ? <nixpkgs>
-, config ? {}
+{ lib
+, stdenv
+, fetchFromGitHub
+, nodejs_24
+, pnpm_11
+, pnpmConfigHook
+, fetchPnpmDeps
+, bash
+, buildGoModule
 }:
 
 let
-  pkgs = import nixpkgs config;
-  inherit (pkgs) lib;
   # main at time of writing, because no tag has support for node > 20 yet (and
   # node 20 is EOL)
   version = "bf83f165eef5c0ba36aca9f02d11e261bf29223d";
-  src = pkgs.fetchFromGitHub {
+  src = fetchFromGitHub {
     owner = "bluesky-social";
     repo = "social-app";
     rev = version;
     hash = "sha256-zAbnISQYfjs3icbloRRY6JcsHgvFdengdBu/GblsSLc=";
   };
-  nodejs_pin = pkgs.nodejs_24;
+  nodejs_pin = nodejs_24;
   # pinning per https://nixos.org/manual/nixpkgs/unstable/#javascript-pnpm
-  pnpm = pkgs.pnpm_11;
-  static = pkgs.stdenv.mkDerivation {
+  pnpm = pnpm_11;
+  static = stdenv.mkDerivation {
     pname = "bsky-app-static";
     inherit version src;
 
     nativeBuildInputs = [
       nodejs_pin
       pnpm
-      pkgs.pnpmConfigHook
-      #pkgs.python3
+      pnpmConfigHook
     ];
 
-    pnpmDeps = pkgs.fetchPnpmDeps {
+    pnpmDeps = fetchPnpmDeps {
       pname = "bsky-app-static";
       inherit version src;
       inherit pnpm;
@@ -50,14 +54,14 @@ let
       # insist on our own node binary
       rm -f node_modules/.bin/node
 
-      make build-web SHELL=${pkgs.bash}/bin/bash
+      make build-web SHELL=${bash}/bin/bash
     '';
 
     installPhase = ''
       cp -r bskyweb $out/
     '';
   };
-  server = pkgs.buildGoModule {
+  server = buildGoModule {
     pname = "bskyweb";
     inherit version;
     src = static;
