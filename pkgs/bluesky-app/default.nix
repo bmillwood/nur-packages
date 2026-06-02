@@ -10,14 +10,12 @@
 }:
 
 let
-  # main at time of writing, because no tag has support for node > 20 yet (and
-  # node 20 is EOL)
-  version = "bf83f165eef5c0ba36aca9f02d11e261bf29223d";
+  version = "1.122.0";
   src = fetchFromGitHub {
     owner = "bluesky-social";
     repo = "social-app";
     rev = version;
-    hash = "sha256-zAbnISQYfjs3icbloRRY6JcsHgvFdengdBu/GblsSLc=";
+    hash = "sha256-aayLbaGMcBp/IaD+EWwSs2fCMxclI6+YF7SykO9Madg=";
   };
   nodejs_pin = nodejs_24;
   # pinning per https://nixos.org/manual/nixpkgs/unstable/#javascript-pnpm
@@ -37,7 +35,7 @@ let
       inherit version src;
       inherit pnpm;
       fetcherVersion = 3;
-      hash = "sha256-bCZDuV0QMrcJnVzvwGTh6x9Wx8OXKo8tUme3qTk7t5U=";
+      hash = "sha256-w9MF2aHw9mIoTORbgNtvwL/SRVNr4qjYEB5aBcfO6T8=";
     };
 
     preConfigure = ''
