@@ -31,10 +31,6 @@ pkgs.stdenv.mkDerivation {
     unzip -q $src || [ "$?" == "1" ]
   '';
 
-  installPhase = ''
-    cp -r data/noarch $out/
-  '';
-
   ldLibraryPath = "/run/opengl-driver/lib:${pkgs.lib.makeLibraryPath [
     pkgs.icu
     pkgs.libGL
@@ -42,8 +38,10 @@ pkgs.stdenv.mkDerivation {
     pkgs.libpulseaudio
   ]}";
 
-  postFixup = ''
-    wrapProgram $out/game/"Stardew Valley" \
+  installPhase = ''
+    cp -r data/noarch $out/
+    mkdir $out/bin
+    makeWrapper "$out/game/Stardew Valley" $out/bin/stardew-valley \
       --prefix LD_LIBRARY_PATH : "$ldLibraryPath"
   '';
 
