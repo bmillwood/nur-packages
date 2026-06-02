@@ -20,4 +20,5 @@
   overlays = import ./overlays; # nixpkgs overlays
 
   bluesky-app = pkgs.callPackage ./pkgs/bluesky-app { };
+  stardew-valley = pkgs.callPackage ./pkgs/stardew-valley { };
 }
