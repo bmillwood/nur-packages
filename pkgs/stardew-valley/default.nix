@@ -1,35 +1,17 @@
 { pkgs ? import <nixpkgs> {} }:
 
-let
-  installerName = "stardew_valley_1_6_15_24357_8705766150_78675.sh";
-  pkgLibraryPath = pkgs.lib.makeLibraryPath [
-      pkgs.icu
-      pkgs.libGL
-      pkgs.libGLX
-      pkgs.libglvnd
-      pkgs.libudev0-shim
-      pkgs.libxcursor
-      pkgs.libxi
-      pkgs.libxrandr
-      pkgs.libpulseaudio
-    ];
-  libraryPath = "/run/opengl-driver/lib:/run/opengl-driver-32/lib:${pkgLibraryPath}";
-in
 pkgs.stdenv.mkDerivation {
   pname = "stardew-valley";
   version = "1.6.15.24357.8705766150";
 
-  # Downloaded from gog.com.
   src = pkgs.requireFile {
-    name = installerName;
+    name = "stardew_valley_1_6_15_24357_8705766150_78675.sh";
     sha256 = "1vvhaldjrg2s04hd6d1ys4nd6z7k97bw7afn2wb9ya0rs6b79bls";
-    message = "${installerName} is not in the nix store";
+    url = "https://www.gog.com/en/game/stardew_valley";
   };
 
   nativeBuildInputs = [
     pkgs.autoPatchelfHook
-    pkgs.bash
-    pkgs.coreutils
     pkgs.makeWrapper
     pkgs.unzip
   ];
@@ -43,17 +25,32 @@ pkgs.stdenv.mkDerivation {
   ];
 
   unpackPhase = ''
-    zipOffset=$(grep --max-count=1 --byte-offset --only-matching --text ''$'PK\x03\x04' $src | cut -d: -f1)
-    dd bs="$zipOffset" skip=1 if=$src of=data.zip
-    unzip data.zip
+    echo "the installer script has an embedded zipfile which unzip can extract" >&2
+    echo "you should see a warning about extra bytes next, that's fine" >&2
+    # accept exit code 1 but not any other nonzero code
+    unzip -q $src || [ "$?" == "1" ]
   '';
 
   installPhase = ''
     cp -r data/noarch $out/
   '';
 
+  ldLibraryPath = "/run/opengl-driver/lib:${pkgs.lib.makeLibraryPath [
+    pkgs.icu
+    pkgs.libGL
+    pkgs.libxrandr
+    pkgs.libpulseaudio
+  ]}";
+
   postFixup = ''
     wrapProgram $out/game/"Stardew Valley" \
-      --prefix LD_LIBRARY_PATH : "${libraryPath}"
+      --prefix LD_LIBRARY_PATH : "$ldLibraryPath"
   '';
+
+  meta = {
+    homepage = "https://www.stardewvalley.net/";
+    license = pkgs.lib.licenses.unfree;
+    platforms = [ "x86_64-linux" ];
+    mainProgram = "Stardew Valley";
+  };
 }
