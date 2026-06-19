@@ -1,1 +1,12 @@
-{}
+{
+    "customManagers": [
+        {
+            "customType": "regex",
+            "description": "Update Nix fetchFromGitHub version pins",
+            "managerFilePatterns": ["pkgs/**/default.nix"],
+            "matchStrings": [
+                "version = \"(?<currentValue>[0-9.]+)\";\\s*# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)"
+            ]
+        }
+    ]
+}
