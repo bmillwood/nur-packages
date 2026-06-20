@@ -10,12 +10,12 @@
 }:
 
 let
-  version = "1.122.0"; # renovate: datasource=github-tags depName=bluesky-social/social-app
+  version = "1.124.0"; # renovate: datasource=github-tags depName=bluesky-social/social-app
   src = fetchFromGitHub {
     owner = "bluesky-social";
     repo = "social-app";
     rev = version;
-    hash = "sha256-aayLbaGMcBp/IaD+EWwSs2fCMxclI6+YF7SykO9Madg=";
+    hash = "sha256-SU1w9QzuewSu/EqgdzEN4BKd3ViPlr4/k2kTU2WSOEM=";
   };
   nodejs_pin = nodejs_24;
   # pinning per https://nixos.org/manual/nixpkgs/unstable/#javascript-pnpm
@@ -35,7 +35,7 @@ let
       inherit version src;
       inherit pnpm;
       fetcherVersion = 3;
-      hash = "sha256-w9MF2aHw9mIoTORbgNtvwL/SRVNr4qjYEB5aBcfO6T8=";
+      hash = "sha256-Q9o2pa5V8DIhXzA22k1xBUiDRSfpBpVnbqfYeefMRzo=";
     };
 
     # pnpm downloads a node binary that matches the version specified in the
@@ -72,7 +72,7 @@ let
     pname = "bskyweb";
     inherit version;
     src = static;
-    vendorHash = "sha256-5iwhahIfwbjQ5qJm3RKH+ywnXX/Q5uWmENIrq9Kdq80=";
+    vendorHash = "sha256-b2r8ZDKQzPzEiMOk2JE0EiU2taH371tb268df+HVIKw=";
   };
 in
 server
