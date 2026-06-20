@@ -72,7 +72,7 @@ let
     pname = "bskyweb";
     inherit version;
     src = static;
-    vendorHash = "sha256-5iwhahIfwbjQ5qJm3RKH+ywnXX/Q5uWmENIrq9Kdq80=";
+    vendorHash = "sha256-b2r8ZDKQzPzEiMOk2JE0EiU2taH371tb268df+HVIKw=";
   };
 in
 server
