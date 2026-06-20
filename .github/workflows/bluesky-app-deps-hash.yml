@@ -1,0 +1,53 @@
+on:
+  push:
+    branches:
+      - 'renovate/**'
+    paths:
+      - pkgs/bluesky-app/default.nix
+  pull_request:
+    paths:
+      - .github/workflows/bluesky-app-deps-hash.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  nixpkgs_version: 331800de5053fcebacf6813adb5db9c9dca22a0c # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-unstable
+
+jobs:
+  update-hashes:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -euo pipefail {0}
+
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          client-id: ${{ secrets.RENOVATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Use the App token so the resulting push re-triggers CI;
+          # GITHUB_TOKEN-pushed commits don't fire workflow events.
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        with:
+          nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/${{ env.nixpkgs_version }}.tar.gz
+
+      - name: Recompute hashes
+        env:
+          DRY_RUN: ${{ github.event_name == 'pull_request' }}
+        run: |
+          nix-shell -p nix-update --run "nix-update bluesky-app --version=skip --subpackage=src"
+          if git diff --exit-code; then
+            echo "No changes to commit"
+          else
+            git commit -am "Update bluesky-app deps hashes"
+            "$DRY_RUN" || git push
+          fi
