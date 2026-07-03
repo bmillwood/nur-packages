@@ -23,6 +23,8 @@ jobs:
         shell: bash -euo pipefail {0}
 
     steps:
+      # Use an app token so the resulting push re-triggers CI;
+      # GITHUB_TOKEN-pushed commits don't fire workflow events.
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: app-token
         with:
@@ -32,8 +34,6 @@ jobs:
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          # Use the App token so the resulting push re-triggers CI;
-          # GITHUB_TOKEN-pushed commits don't fire workflow events.
           token: ${{ steps.app-token.outputs.token }}
 
       - uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
