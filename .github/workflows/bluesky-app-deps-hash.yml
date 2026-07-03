@@ -43,11 +43,14 @@ jobs:
       - name: Recompute hashes
         env:
           DRY_RUN: ${{ github.event_name == 'pull_request' }}
+          GIT_USER: ${{ github.actor }}
         run: |
           nix-shell -p nix-update --run "nix-update bluesky-app --version=skip --subpackage=src"
           if git diff --exit-code; then
             echo "No changes to commit"
           else
+            git config --global user.name "$GIT_USER"
+            git config --global user.email "${GIT_USER}[bot]@users.noreply.github.com"
             git commit -am "Update bluesky-app deps hashes"
             "$DRY_RUN" || git push
           fi
