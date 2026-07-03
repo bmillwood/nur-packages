@@ -17,6 +17,8 @@ env:
 
 jobs:
   update-hashes:
+    # Don't self-trigger.
+    if: github.event_name != 'push' || github.event.head_commit.message != github.workflow
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -51,6 +53,6 @@ jobs:
           else
             git config --global user.name "$GIT_USER"
             git config --global user.email "${GIT_USER}[bot]@users.noreply.github.com"
-            git commit -am "Update bluesky-app deps hashes"
+            git commit -am "${{ github.workflow }}"
             "$DRY_RUN" || git push
           fi
