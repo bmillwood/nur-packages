@@ -1,6 +1,9 @@
 name: "Build and populate cache"
 on:
   pull_request:
+    paths-ignore:
+      - .github/renovate.json
+      - .github/workflows/renovate.yml
   push:
     branches:
       - main
