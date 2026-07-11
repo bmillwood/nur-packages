@@ -34,8 +34,8 @@ let
       pname = "bsky-app-static";
       inherit version src;
       inherit pnpm;
-      fetcherVersion = 3;
-      hash = "sha256-BXRkkNXdsEA//rhtsVCoi/bEzXBeoVYlUTndVSMQ+Rk=";
+      fetcherVersion = 4;
+      hash = "sha256-CfLSwmnmslB+gKtChUWzNgh/+crcBxNezMsRyDnqqqU=";
     };
 
     # pnpm downloads a node binary that matches the version specified in the
