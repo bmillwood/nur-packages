@@ -39,9 +39,9 @@ jobs:
           - <YOUR_CACHIX_NAME>
         nixpkgs:
           - name: nixos-unstable
-            git-version: e2587caef70cea85dd97d7daab492899902dbf5d # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-unstable
+            git-version: 0e251e24a4f24e036a084b6b4b2d2491af4167f4 # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-unstable
           - name: nixos-26.05
-            git-version: b3fe9581c9061c749abef42b6d4ee7b7c05c33fa # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-26.05
+            git-version: 9f78f44a87948854445dae0b6bf82b2e87e4efb5 # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-26.05
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
