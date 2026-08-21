@@ -10,7 +10,7 @@
 }:
 
 let
-  version = "1.130.0"; # renovate: datasource=github-tags depName=bluesky-social/social-app
+  version = "1.131.1"; # renovate: datasource=github-tags depName=bluesky-social/social-app
   src = fetchFromGitHub {
     owner = "bluesky-social";
     repo = "social-app";
