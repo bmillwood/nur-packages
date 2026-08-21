@@ -14,7 +14,7 @@ let
   src = fetchFromGitHub {
     owner = "bluesky-social";
     repo = "social-app";
-    rev = version;
+    tag = version;
     hash = "sha256-PyV7b34S1q6KB/JAM1p5m85/sqRXIE/0fp3pIGjJtso=";
   };
   nodejs_pin = nodejs_24;
