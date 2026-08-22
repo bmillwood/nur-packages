@@ -15,7 +15,7 @@ let
     owner = "bluesky-social";
     repo = "social-app";
     tag = version;
-    hash = "sha256-PyV7b34S1q6KB/JAM1p5m85/sqRXIE/0fp3pIGjJtso=";
+    hash = "sha256-EQsxrCy8Oyg4zZOVHEkG02EfMLwv/bcpdDLjY1R62tA=";
   };
   nodejs_pin = nodejs_24;
   # pinning per https://nixos.org/manual/nixpkgs/unstable/#javascript-pnpm
@@ -35,7 +35,7 @@ let
       inherit version src;
       inherit pnpm;
       fetcherVersion = 4;
-      hash = "sha256-X/gUwGei5P5O9znZPzV0djDbv3kUVeer2nIh58mkVQI=";
+      hash = "sha256-Nvckue7iPNswfgWmkLVTOSg4m0AoqGYzHDkO5QsR88w=";
     };
 
     # pnpm downloads a node binary that matches the version specified in the
@@ -60,6 +60,9 @@ let
     # (having not been autoPatchElf'd)
     buildPhase = ''
       rm -f node_modules/.bin/node
+
+      # postinstall is skipped by pnpmConfigHook (--ignore-scripts)
+      pnpm lexicons:generate
 
       make build-web SHELL=${bash}/bin/bash
     '';
