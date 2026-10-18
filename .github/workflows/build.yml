@@ -7,9 +7,6 @@ on:
   push:
     branches:
       - main
-  schedule:
-    # chosen by fair website, guaranteed to be random
-    - cron:  '25 1 * * *'
   workflow_dispatch:
 
 jobs:
