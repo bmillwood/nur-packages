@@ -38,6 +38,10 @@ let
       hash = "sha256-wnm2H0lpnhEziqTKFHq5lMccA6CuS2KxmBGD5xW0LgY=";
     };
 
+    # to avoid JavaScript heap exhaustion issues, matching
+    # https://github.com/bluesky-social/social-app/blob/485405a086bbe700bbfb84c9a8669608617d0105/.github/workflows/pull-request-commit.yml#L25
+    env.NODE_OPTIONS = "--max-old-space-size=4096";
+
     # pnpm downloads a node binary that matches the version specified in the
     # package.json. I tried using that instead of system node, but I can't
     # autoPatchElf it inside fetchPnpmDeps (that's a fixed-output derivation so
