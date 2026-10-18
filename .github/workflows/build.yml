@@ -7,10 +7,8 @@ on:
   push:
     branches:
       - main
-      - master
   schedule:
-    # TIP: Choose a random time here so not all repositories are build at once:
-    # https://www.random.org/clock-times/?num=1&earliest=01%3A00&latest=08%3A00&interval=5&format=html&rnd=new
+    # chosen by fair website, guaranteed to be random
     - cron:  '25 1 * * *'
   workflow_dispatch:
 
@@ -36,7 +34,7 @@ jobs:
         # Github found at
         # https://github.com/<your_githubname>/nur-packages/settings/secrets
         cachixName:
-          - <YOUR_CACHIX_NAME>
+          - bmillwood
         nixpkgs:
           - name: nixos-unstable
             git-version: 55bfb4d7437bd4e09ab7cba58a43bd68eb310044 # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-unstable
