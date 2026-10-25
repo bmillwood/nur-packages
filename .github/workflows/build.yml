@@ -34,9 +34,9 @@ jobs:
           - bmillwood
         nixpkgs:
           - name: nixos-unstable
-            git-version: fe13242281a67641c0102cdb1087f0ebe586c7df # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-unstable
+            git-version: 02c087f3fe673c9e317f206a627cb6b910336dbe # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-unstable
           - name: nixos-26.05
-            git-version: 26f4107e47e3ad0ffd0db220469ba83b6f6d96e8 # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-26.05
+            git-version: da6dc0e7b26060f2f71ce3ef7088fb56ee44fa36 # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-26.05
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
