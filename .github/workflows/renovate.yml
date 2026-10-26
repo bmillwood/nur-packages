@@ -9,5 +9,5 @@ on:
 
 jobs:
   upgrade-dependencies:
-    uses: bmillwood/renovateconfig/.github/workflows/renovate.yml@b97a341ace204eab1b07349bc887787025d1de8e # main
+    uses: bmillwood/renovateconfig/.github/workflows/renovate.yml@b854816099ab7e35dd11634d378f32fd66af96c8 # main
     secrets: inherit
