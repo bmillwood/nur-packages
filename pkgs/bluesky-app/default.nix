@@ -5,7 +5,6 @@
 , pnpm_11
 , pnpmConfigHook
 , fetchPnpmDeps
-, bash
 , buildGoModule
 }:
 
@@ -15,7 +14,7 @@ let
     owner = "bluesky-social";
     repo = "social-app";
     tag = version;
-    hash = "sha256-KO3rq2+GwXtZAyriFCrIlFfRL+Mvsu73I9z6GeQDvyQ=";
+    hash = "sha256-G1j54Q58hhgkPCoA7mb2Aab6xiZkt8bnYUH7BSkldHM=";
   };
   nodejs_pin = nodejs_24;
   # pinning per https://nixos.org/manual/nixpkgs/unstable/#javascript-pnpm
@@ -35,7 +34,7 @@ let
       inherit version src;
       inherit pnpm;
       fetcherVersion = 4;
-      hash = "sha256-wnm2H0lpnhEziqTKFHq5lMccA6CuS2KxmBGD5xW0LgY=";
+      hash = "sha256-bIoHyQoSUdxaSdnz5aTUyyMFFlm2GUxU7MuMcCX1U+E=";
     };
 
     # to avoid JavaScript heap exhaustion issues, matching
@@ -68,7 +67,8 @@ let
       # postinstall is skipped by pnpmConfigHook (--ignore-scripts)
       pnpm lexicons:generate
 
-      make build-web SHELL=${bash}/bin/bash
+      pnpm intl:build
+      pnpm build-web
     '';
 
     installPhase = ''
