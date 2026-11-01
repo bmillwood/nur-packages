@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  nixpkgs_version: 3ec636362e1816bc2f0888fa0fa2c69f1bc9e504 # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-unstable
+  nixpkgs_version: 1c89083e451e891152365b799595cf7790a43325 # renovate: datasource=git-refs depName=NixOS/nixpkgs packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-unstable
 
 jobs:
   update-hashes:
