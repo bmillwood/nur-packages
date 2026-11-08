@@ -1,6 +1,7 @@
 { lib
 , python3Packages
 , fetchFromGitHub
+, gitMinimal
 
 }:
 
@@ -42,6 +43,10 @@ python3Packages.buildPythonApplication rec {
     wenmode
     quickjs-ng
   ];
+
+  # Commit links come from running git on the transcript's working directory,
+  # and are quietly left out if it isn't on PATH.
+  makeWrapperArgs = [ "--prefix" "PATH" ":" (lib.makeBinPath [ gitMinimal ]) ];
 
   pythonImportsCheck = [ "claude_code_log" ];
 
