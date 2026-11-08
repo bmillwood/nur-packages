@@ -22,7 +22,7 @@ in
     };
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
     systemd.services.autoupgrade = {
       serviceConfig = {
         Type = "oneshot";
