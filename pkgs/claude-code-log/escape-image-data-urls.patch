@@ -1,0 +1,232 @@
+Backport of https://github.com/daaain/claude-code-log/commit/3d2a5c4b09625871ae234b1528633f0772ac8c76
+(#370) to 1.7.0, without its tests and docs. Only the tool_formatters.py import
+needed adjusting, because the line it was added after isn't in 1.7.0.
+
+diff --git a/claude_code_log/html/assistant_formatters.py b/claude_code_log/html/assistant_formatters.py
+index 3128a50..02295cf 100644
+--- a/claude_code_log/html/assistant_formatters.py
++++ b/claude_code_log/html/assistant_formatters.py
+@@ -108,7 +108,10 @@ def format_image_content(image: ImageContent) -> str:
+     src = export_image(image, mode="embedded")
+     if src is None:
+         return "[Image]"
+-    return f'<img src="{src}" alt="image" class="uploaded-image" />'
++    # Escape the src: export_image allowlists the media type and
++    # validates the base64, but the data: URL still must not be able to
++    # break out of the attribute (issue #277).
++    return f'<img src="{escape_html(src)}" alt="image" class="uploaded-image" />'
+ 
+ 
+ def format_unknown_content(content: UnknownMessage) -> str:
+diff --git a/claude_code_log/html/renderer.py b/claude_code_log/html/renderer.py
+index c2baea9..879829d 100644
+--- a/claude_code_log/html/renderer.py
++++ b/claude_code_log/html/renderer.py
+@@ -493,7 +493,10 @@ class HtmlRenderer(Renderer):
+         )
+         if src is None:
+             return "[Image]"
+-        return f'<img src="{src}" alt="image" class="uploaded-image" />'
++        # Escape the src: export_image allowlists the media type and
++        # validates the base64, but the data: URL (embedded mode) still
++        # must not be able to break out of the attribute (issue #277).
++        return f'<img src="{escape_html(src)}" alt="image" class="uploaded-image" />'
+ 
+     # -------------------------------------------------------------------------
+     # System Content Formatters
+diff --git a/claude_code_log/html/tool_formatters.py b/claude_code_log/html/tool_formatters.py
+index 5c221f0..a2481f4 100644
+--- a/claude_code_log/html/tool_formatters.py
++++ b/claude_code_log/html/tool_formatters.py
+@@ -14,8 +14,6 @@ These formatters take tool-specific input/output data and generate
+ HTML for display in transcripts.
+ """
+ 
+-import base64
+-import binascii
+ import json
+ import re
+ from collections.abc import Iterable
+@@ -34,6 +32,7 @@ from .utils import (
+     render_user_markdown_collapsible,
+     resolve_memory_body_links,
+ )
++from ..image_export import is_safe_image_source
+ from ..utils import (
+     ARTIFACT_FAVICON_TEXT_MAX,
+     is_safe_web_url,
+@@ -1514,22 +1513,10 @@ def format_tool_result_content_raw(tool_result: ToolResultContent) -> str:
+                 source = cast(dict[str, Any], item.get("source", {}))
+                 if source:
+                     media_type: str = str(source.get("media_type", "image/png"))
+-                    # Restrict to safe image types to prevent XSS via SVG
+-                    allowed_media_types = {
+-                        "image/png",
+-                        "image/jpeg",
+-                        "image/gif",
+-                        "image/webp",
+-                    }
+-                    if media_type not in allowed_media_types:
+-                        continue
+                     data: str = str(source.get("data", ""))
+-                    if data:
+-                        # Validate base64 data to prevent corruption/injection
+-                        try:
+-                            base64.b64decode(data, validate=True)
+-                        except (binascii.Error, ValueError):
+-                            continue
++                    # Same gate as user/assistant images: allowlisted
++                    # (non-SVG) type and strictly-valid base64.
++                    if data and is_safe_image_source(media_type, data):
+                         data_url = f"data:{media_type};base64,{data}"
+                         image_html_parts.append(
+                             f'<img src="{escape_html(data_url)}" alt="Tool result image" '
+diff --git a/claude_code_log/image_export.py b/claude_code_log/image_export.py
+index 78ed447..00c137b 100644
+--- a/claude_code_log/image_export.py
++++ b/claude_code_log/image_export.py
+@@ -15,6 +15,49 @@ if TYPE_CHECKING:
+     from .models import ImageContent
+ 
+ 
++# Image media types we are willing to emit into a data: URL or write to
++# disk. Deliberately excludes ``image/svg+xml`` — SVG can carry inline
++# ``<script>`` and event handlers, so a data:image/svg+xml URL is a
++# scriptable XSS vector when the generated page is opened under
++# ``file://``. Shared by every image sink: user/assistant images here,
++# tool-result images in ``html/tool_formatters.py``, and plugins via
++# ``claude_code_log.plugins.is_safe_image_source`` (issue #277).
++ALLOWED_IMAGE_MEDIA_TYPES = frozenset(
++    {
++        "image/png",
++        "image/jpeg",
++        "image/gif",
++        "image/webp",
++    }
++)
++
++
++def is_safe_image_source(media_type: str, data: str) -> bool:
++    """Whether an image's media type and base64 data are safe to emit.
++
++    Guards the embedded (data: URL) and referenced (write-to-disk)
++    paths, the tool-result image path, and plugin image sinks (it is
++    re-exported from ``claude_code_log.plugins``) against two problems:
++
++    - a non-allowlisted / scriptable media type (notably SVG), and
++    - malformed base64 (which could smuggle a raw ``"`` /  ``>`` past a
++      naive interpolation, or corrupt the written file).
++
++    Returns ``True`` only when the media type is allowlisted *and* the
++    data is strictly-valid base64. Callers should fall back to a
++    placeholder (``None``) otherwise. Note this does not, on its own,
++    make the result safe to drop into HTML unescaped — the HTML sink
++    must still ``escape_html`` the final ``src`` (issue #277).
++    """
++    if media_type not in ALLOWED_IMAGE_MEDIA_TYPES:
++        return False
++    try:
++        base64.b64decode(data, validate=True)
++    except (binascii.Error, ValueError):
++        return False
++    return True
++
++
+ def export_image(
+     image: "ImageContent",
+     mode: str,
+@@ -54,12 +97,23 @@ def export_image(
+         return None
+ 
+     if mode == "embedded":
++        # Reject scriptable / non-allowlisted media types and malformed
++        # base64 before building the data: URL. Even with these guards
++        # the HTML sink must still escape the returned src (issue #277);
++        # returning None here degrades to a placeholder.
++        if not is_safe_image_source(image.source.media_type, image.source.data):
++            return None
+         return f"data:{image.source.media_type};base64,{image.source.data}"
+ 
+     if mode == "referenced":
+         if output_dir is None:
+             return None
+ 
++        # Same allowlist/validation as embedded mode: don't write a
++        # scriptable or malformed image to disk and then reference it.
++        if not is_safe_image_source(image.source.media_type, image.source.data):
++            return None
++
+         tmp_path: Path | None = None
+         try:
+             image_data = base64.b64decode(image.source.data)
+@@ -95,12 +149,17 @@ def export_image(
+ 
+ 
+ def _get_extension(media_type: str) -> str:
+-    """Get file extension from media type."""
++    """Get file extension from media type.
++
++    Only the allowlisted media types (``ALLOWED_IMAGE_MEDIA_TYPES``)
++    reach this in referenced mode; ``image/svg+xml`` is intentionally
++    absent because SVG is rejected upstream as a scriptable XSS vector
++    (issue #277).
++    """
+     ext_map = {
+         "image/png": ".png",
+         "image/jpeg": ".jpg",
+         "image/gif": ".gif",
+         "image/webp": ".webp",
+-        "image/svg+xml": ".svg",
+     }
+     return ext_map.get(media_type, ".png")
+diff --git a/claude_code_log/plugins.py b/claude_code_log/plugins.py
+index bdcbac2..11b2954 100644
+--- a/claude_code_log/plugins.py
++++ b/claude_code_log/plugins.py
+@@ -44,6 +44,7 @@ if TYPE_CHECKING:
+         render_markdown,
+         render_markdown_collapsible,
+     )
++    from .image_export import is_safe_image_source
+     from .markdown.renderer import safe_markdown_inline, safe_markdown_link_target
+     from .utils import is_safe_web_url
+ 
+@@ -373,6 +374,10 @@ _PUBLIC_HELPERS: frozenset[str] = frozenset(
+         # that break out of the ``(target)`` slot or smuggle attributes
+         # through a downstream Markdown->HTML conversion.
+         "safe_markdown_link_target",
++        # Image gate (#277): a transcript image's ``media_type`` and base64
++        # ``data`` are untrusted; a plugin building a ``data:`` URL needs the
++        # same allowlist (no SVG) + strict base64 check as the core sinks.
++        "is_safe_image_source",
+     }
+ )
+ 
+@@ -381,7 +386,8 @@ def __getattr__(name: str) -> Any:  # PEP 562
+     if name in _PUBLIC_HELPERS:
+         # The ``safe_markdown_*`` pair (inline HTML-neutralising gate +
+         # link-target percent-encoder) lives in ``markdown/renderer.py``;
+-        # ``is_safe_web_url`` in top-level ``utils.py``; the others in
++        # ``is_safe_web_url`` in top-level ``utils.py``;
++        # ``is_safe_image_source`` in ``image_export.py``; the others in
+         # ``html/utils.py``. Resolved lazily to keep package init acyclic.
+         if name == "safe_markdown_inline":
+             from .markdown.renderer import safe_markdown_inline as resolved
+@@ -390,6 +396,9 @@ def __getattr__(name: str) -> Any:  # PEP 562
+         elif name == "is_safe_web_url":
+             # Format-neutral (shared by both renderers) → top-level utils.
+             from .utils import is_safe_web_url as resolved
++        elif name == "is_safe_image_source":
++            # Format-neutral image gate → ``image_export.py``.
++            from .image_export import is_safe_image_source as resolved
+         else:
+             from .html import utils as _utils
+ 
+@@ -404,6 +413,7 @@ __all__ = [
+     "MessageTransformer",
+     "apply_transformers",
+     "escape_html",
++    "is_safe_image_source",
+     "is_safe_web_url",
+     "load_transformers",
+     "render_markdown",
