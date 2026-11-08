@@ -6,7 +6,9 @@
 
 buildPythonPackage rec {
   pname = "wenmode";
-  # Kept in step with claude-code-log's version range, so no renovate comment.
+  # No renovate comment, because this has to stay in claude-code-log's version
+  # range. If claude-code-log's range moves past this version, its build fails
+  # in pythonRuntimeDepsCheck.
   version = "0.15.3";
   pyproject = true;
 

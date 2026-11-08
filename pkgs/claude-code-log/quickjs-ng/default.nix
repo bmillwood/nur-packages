@@ -8,6 +8,8 @@
 let
   # Upstream's release CI checks out this tag of quickjs-ng in place of the
   # submodule commit the repo pins, and builds the published wheels from it.
+  # The tag is chosen at https://github.com/genotrance/quickjs-ng/blob/f2ac026f5105b492b15b331bf1b71bd7a4e9cfb2/.github/workflows/build.yml#L32-L66
+  # and checked out for the wheels at https://github.com/genotrance/quickjs-ng/blob/f2ac026f5105b492b15b331bf1b71bd7a4e9cfb2/.github/workflows/build.yml#L138-L142
   upstreamQuickjs = fetchFromGitHub {
     owner = "quickjs-ng";
     repo = "quickjs";
@@ -17,7 +19,9 @@ let
 in
 buildPythonPackage rec {
   pname = "quickjs-ng";
-  # Kept in step with claude-code-log's version range, so no renovate comment.
+  # No renovate comment, because this has to stay in claude-code-log's version
+  # range. If claude-code-log's range moves past this version, its build fails
+  # in pythonRuntimeDepsCheck.
   version = "0.15.1.1";
   pyproject = true;
 
@@ -36,7 +40,8 @@ buildPythonPackage rec {
   '';
 
   # pyproject.toml in the repo has a stale version. Release CI sets it from
-  # the tag, so do the same.
+  # the tag, so do the same:
+  # https://github.com/genotrance/quickjs-ng/blob/f2ac026f5105b492b15b331bf1b71bd7a4e9cfb2/.github/workflows/build.yml#L144-L147
   nativeBuildInputs = [ pyprojectVersionPatchHook ];
 
   build-system = [ setuptools ];
