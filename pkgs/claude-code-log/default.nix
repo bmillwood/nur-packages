@@ -18,7 +18,7 @@ python3Packages.buildPythonApplication rec {
     owner = "daaain";
     repo = "claude-code-log";
     tag = version;
-    hash = "sha256-qeLpWVb96KxO38Yl4oYFfDgX5e+hRlToALRv08FtbqM=";
+    hash = "sha256-S3XPcvPdawk3C+Ecx3o2jQcEXm8Wt6BVsUCRTdaAeJI=";
   };
 
   patches = [
