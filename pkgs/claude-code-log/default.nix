@@ -24,9 +24,11 @@ python3Packages.buildPythonApplication rec {
   build-system = [ python3Packages.hatchling ];
 
   # Upstream raised the floor to 3.2.1 for advisories in GitPython APIs that
-  # claude-code-log doesn't use (daaain/claude-code-log#372). Drop this once
-  # nixpkgs has 3.2.1.
-  pythonRelaxDeps = [ "gitpython" ];
+  # claude-code-log doesn't use (daaain/claude-code-log#372). The assertion
+  # fails once nixpkgs has caught up and this can go.
+  pythonRelaxDeps =
+    assert lib.versionOlder python3Packages.gitpython.version "3.2.1";
+    [ "gitpython" ];
 
   dependencies = (with python3Packages; [
     click
