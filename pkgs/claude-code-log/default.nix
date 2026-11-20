@@ -11,7 +11,7 @@ let
 in
 python3Packages.buildPythonApplication rec {
   pname = "claude-code-log";
-  version = "1.7.0"; # renovate: datasource=github-tags depName=daaain/claude-code-log
+  version = "1.8.0"; # renovate: datasource=github-tags depName=daaain/claude-code-log
   pyproject = true;
 
   src = fetchFromGitHub {
