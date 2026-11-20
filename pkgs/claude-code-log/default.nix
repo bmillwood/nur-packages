@@ -11,23 +11,24 @@ let
 in
 python3Packages.buildPythonApplication rec {
   pname = "claude-code-log";
-  version = "1.7.0"; # renovate: datasource=github-tags depName=daaain/claude-code-log
+  version = "1.8.0"; # renovate: datasource=github-tags depName=daaain/claude-code-log
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "daaain";
     repo = "claude-code-log";
     tag = version;
-    hash = "sha256-qeLpWVb96KxO38Yl4oYFfDgX5e+hRlToALRv08FtbqM=";
+    hash = "sha256-S3XPcvPdawk3C+Ecx3o2jQcEXm8Wt6BVsUCRTdaAeJI=";
   };
 
-  patches = [
-    # Stored XSS through an embedded image's media_type, fixed upstream after
-    # 1.7.0. Drop this once a release includes it.
-    ./escape-image-data-urls.patch
-  ];
-
   build-system = [ python3Packages.hatchling ];
+
+  # Upstream raised the floor to 3.2.1 for advisories in GitPython APIs that
+  # claude-code-log doesn't use (daaain/claude-code-log#372). The assertion
+  # fails once nixpkgs has caught up and this can go.
+  pythonRelaxDeps =
+    assert lib.versionOlder python3Packages.gitpython.version "3.2.1";
+    [ "gitpython" ];
 
   dependencies = (with python3Packages; [
     click
@@ -39,6 +40,7 @@ python3Packages.buildPythonApplication rec {
     packaging
     gitpython
     pygments
+    pyyaml
   ]) ++ [
     wenmode
     quickjs-ng
