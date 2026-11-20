@@ -21,13 +21,12 @@ python3Packages.buildPythonApplication rec {
     hash = "sha256-S3XPcvPdawk3C+Ecx3o2jQcEXm8Wt6BVsUCRTdaAeJI=";
   };
 
-  patches = [
-    # Stored XSS through an embedded image's media_type, fixed upstream after
-    # 1.7.0. Drop this once a release includes it.
-    ./escape-image-data-urls.patch
-  ];
-
   build-system = [ python3Packages.hatchling ];
+
+  # Upstream raised the floor to 3.2.1 for advisories in GitPython APIs that
+  # claude-code-log doesn't use (daaain/claude-code-log#372). Drop this once
+  # nixpkgs has 3.2.1.
+  pythonRelaxDeps = [ "gitpython" ];
 
   dependencies = (with python3Packages; [
     click
@@ -39,6 +38,7 @@ python3Packages.buildPythonApplication rec {
     packaging
     gitpython
     pygments
+    pyyaml
   ]) ++ [
     wenmode
     quickjs-ng
