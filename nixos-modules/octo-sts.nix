@@ -148,10 +148,10 @@ in
 
     services.nginx = lib.mkIf cfg.configureNginx {
       enable = true;
-      recommendedProxySettings = true;
-      recommendedTlsSettings = true;
       virtualHosts.${cfg.domain} = {
         enableACME = true;
+        # Port 80 then answers ACME's HTTP-01 challenges and redirects
+        # everything else, so tokens never cross plain HTTP.
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:${toString cfg.port}";
       };

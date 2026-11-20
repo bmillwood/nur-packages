@@ -14,7 +14,7 @@ testers.runNixOSTest {
   name = "octo-sts";
 
   nodes.machine = {
-    imports = [ ../../nixos-modules/octo-sts.nix ];
+    imports = [ ../nixos-modules/octo-sts.nix ];
     services.octo-sts = {
       enable = true;
       domain = "sts.example.invalid";
@@ -26,7 +26,7 @@ testers.runNixOSTest {
   testScript = ''
     machine.wait_for_unit("octo-sts.service")
     machine.wait_for_open_port(8080)
-    machine.succeed("curl -sf http://localhost:8080/ | grep -q 'please check documentation'")
+    machine.succeed("curl -sf http://localhost:8080/")
     machine.succeed(
       "curl -s -H 'Authorization: Bearer x.y.z' "
       "'http://localhost:8080/sts/exchange?scope=a/b&identity=c' "

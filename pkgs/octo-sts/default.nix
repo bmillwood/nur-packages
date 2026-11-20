@@ -22,13 +22,11 @@ buildGoModule rec {
   # Chainguard's own deployment.
   subPackages = [ "cmd/app" ];
 
-  ldflags = [ "-s" "-w" ];
-
   postInstall = ''
     mv $out/bin/app $out/bin/octo-sts
   '';
 
-  passthru.tests.nixos = callPackage ./test.nix { };
+  passthru.tests.nixos = callPackage ../../tests/octo-sts.nix { };
 
   meta = {
     description = "Security token service exchanging OIDC tokens for scoped GitHub App installation tokens";
