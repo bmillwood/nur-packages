@@ -63,23 +63,14 @@ in
       '';
     };
 
-    blockPrivateIPs = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = ''
-        Refuse OIDC discovery and key fetches to private and shared
-        (e.g. Tailscale) addresses. Only turn this off to trust an issuer
-        that lives on one.
-      '';
-    };
-
     environment = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };
       example = { OCTOSTS_POLICY_DIR = ".github/octo-sts"; };
       description = ''
-        Further environment variables; see the octo-sts README for the rest.
-        These override the ones this module sets.
+        Further environment variables; see the
+        [octo-sts README](https://github.com/octo-sts/app#readme) for the
+        rest. These override the ones this module sets.
       '';
     };
 
@@ -109,7 +100,10 @@ in
         # below.
         APP_SECRET_CERTIFICATE_FILE = "%d/app.pem";
         OCTOSTS_ALLOWED_ISSUERS = lib.concatStringsSep "," cfg.allowedIssuers;
-        OCTOSTS_OIDC_BLOCK_PRIVATE_IPS = lib.boolToString cfg.blockPrivateIPs;
+        # Upstream leaves this off so issuers on private networks work.
+        # Without one, it only lets callers make this server probe the local
+        # network.
+        OCTOSTS_OIDC_BLOCK_PRIVATE_IPS = "true";
         # Metrics on means a Prometheus listener and an OpenTelemetry
         # tracer set up for Google Cloud.
         METRICS = "false";
