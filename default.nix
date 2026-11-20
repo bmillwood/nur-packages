@@ -21,5 +21,6 @@
 
   bluesky-app = pkgs.callPackage ./pkgs/bluesky-app { };
   claude-code-log = pkgs.callPackage ./pkgs/claude-code-log { };
+  octo-sts = pkgs.callPackage ./pkgs/octo-sts { };
   stardew-valley = pkgs.callPackage ./pkgs/stardew-valley { };
 }
