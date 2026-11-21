@@ -1,5 +1,6 @@
 issuer: https://token.actions.githubusercontent.com
 subject_pattern: "repo:bmillwood/nur-packages:(pull_request|ref:refs/heads/renovate/.*)"
 
+app: renovate
 permissions:
   contents: write
