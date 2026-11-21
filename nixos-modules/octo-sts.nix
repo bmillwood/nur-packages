@@ -2,8 +2,32 @@
 
 let
   cfg = config.services.octo-sts;
+
+  appConfigFile = (pkgs.formats.yaml { }).generate "octo-sts-apps.yaml" {
+    orgs = lib.mapAttrsToList
+      (org: apps: {
+        name = org;
+        apps = map
+          (app: {
+            app_name = app.name;
+            app_id = app.appId;
+            # octo-sts expands ${VAR} in the file's strings.
+            private_key_file = "\${CREDENTIALS_DIRECTORY}/${app.name}.pem";
+          })
+          apps;
+      })
+      (lib.groupBy (app: app.org)
+        (lib.mapAttrsToList (name: app: app // { inherit name; }) cfg.apps));
+  };
 in
 {
+  imports = [
+    (lib.mkRemovedOptionModule [ "services" "octo-sts" "appId" ]
+      "Use services.octo-sts.apps.<name>.appId instead.")
+    (lib.mkRemovedOptionModule [ "services" "octo-sts" "privateKeyFile" ]
+      "Use services.octo-sts.apps.<name>.privateKeyFile instead.")
+  ];
+
   options.services.octo-sts = {
     enable = lib.mkEnableOption ''
       octo-sts, which exchanges OIDC tokens (e.g. from GitHub Actions) for
@@ -38,18 +62,44 @@ in
       '';
     };
 
-    appId = lib.mkOption {
-      type = lib.types.ints.positive;
-      description = "Numeric ID of the GitHub App that mints the tokens.";
-    };
-
-    privateKeyFile = lib.mkOption {
-      type = lib.types.path;
-      example = "/run/secrets/octo-sts.pem";
+    apps = lib.mkOption {
       description = ''
-        The GitHub App's private key. It's passed to the service as a systemd
-        credential, so it can stay readable by root only.
+        The GitHub Apps that mint tokens, by name. A trust policy picks one
+        with `app: <name>`. Tokens act as that App's bot user, so separate
+        Apps give separate identities to the automations using them.
       '';
+      example = lib.literalExpression ''
+        {
+          renovate = { appId = 123; privateKeyFile = "/run/secrets/renovate.pem"; };
+          claude = { appId = 456; privateKeyFile = "/run/secrets/claude.pem"; };
+        }
+      '';
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          appId = lib.mkOption {
+            type = lib.types.ints.positive;
+            description = "The App's numeric ID (not its client ID).";
+          };
+
+          privateKeyFile = lib.mkOption {
+            type = lib.types.path;
+            example = "/run/secrets/octo-sts.pem";
+            description = ''
+              The App's private key. It's passed to the service as a systemd
+              credential, so it can stay readable by root only.
+            '';
+          };
+
+          org = lib.mkOption {
+            type = lib.types.str;
+            default = "*";
+            description = ''
+              The GitHub owner whose repositories this App serves, or `*` for
+              any owner that no other App names.
+            '';
+          };
+        };
+      });
     };
 
     allowedIssuers = lib.mkOption {
@@ -95,10 +145,10 @@ in
       environment = {
         PORT = toString cfg.port;
         STS_DOMAIN = cfg.domain;
-        GITHUB_APP_IDS = toString cfg.appId;
-        # %d is systemd's credentials directory, holding the LoadCredential
-        # below.
-        APP_SECRET_CERTIFICATE_FILE = "%d/app.pem";
+        APP_CONFIG_FILE = appConfigFile;
+        # Otherwise a policy that doesn't name an App gets whichever one
+        # octo-sts picks, i.e. an unpredictable identity.
+        OCTOSTS_REQUIRE_APP_PIN = lib.boolToString (lib.length (lib.attrNames cfg.apps) > 1);
         OCTOSTS_ALLOWED_ISSUERS = lib.concatStringsSep "," cfg.allowedIssuers;
         # Upstream leaves this off so issuers on private networks work.
         # Without one, it only lets callers make this server probe the local
@@ -111,7 +161,9 @@ in
       serviceConfig = {
         ExecStart = lib.getExe cfg.package;
         Restart = "on-failure";
-        LoadCredential = [ "app.pem:${cfg.privateKeyFile}" ];
+        LoadCredential = lib.mapAttrsToList
+          (name: app: "${name}.pem:${app.privateKeyFile}")
+          cfg.apps;
 
         DynamicUser = true;
         CapabilityBoundingSet = "";
