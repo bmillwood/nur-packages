@@ -3,7 +3,7 @@ on:
   pull_request:
     paths-ignore:
       - .github/renovate.json
-      - .github/workflows/renovate.yml
+      - .github/workflows/deps-hash.yml
   push:
     branches:
       - main
