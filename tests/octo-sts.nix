@@ -1,12 +1,13 @@
 # Checks the module's service starts under its systemd sandboxing and can read
-# its key through LoadCredential, which evaluation alone can't tell you.
+# its keys through LoadCredential and the generated config file, which
+# evaluation alone can't tell you.
 # Exchanging a real token would need GitHub, so the last check only reaches as
 # far as token validation.
 { testers, runCommand, openssl }:
 
 let
-  # A throwaway key, world-readable in the store, which is fine for a test.
-  privateKey = runCommand "octo-sts-test-key.pem" { nativeBuildInputs = [ openssl ]; } ''
+  # Throwaway keys, world-readable in the store, which is fine for a test.
+  privateKey = name: runCommand "octo-sts-test-${name}.pem" { nativeBuildInputs = [ openssl ]; } ''
     openssl genrsa -out $out 2048
   '';
 in
@@ -18,8 +19,10 @@ testers.runNixOSTest {
     services.octo-sts = {
       enable = true;
       domain = "sts.example.invalid";
-      appId = 1;
-      privateKeyFile = privateKey;
+      apps = {
+        alpha = { appId = 1; privateKeyFile = privateKey "alpha"; };
+        beta = { appId = 2; privateKeyFile = privateKey "beta"; org = "example"; };
+      };
     };
   };
 
