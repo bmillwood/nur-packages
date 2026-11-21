@@ -51,6 +51,10 @@ rec {
   buildPkgs = filter isBuildable nurPkgs;
   cachePkgs = filter isCacheable buildPkgs;
 
+  # passthru.tests, e.g. NixOS VM tests. They're cached like packages, so CI
+  # only reruns one when something it depends on changes.
+  testPkgs = concatMap (p: filter isDerivation (attrValues (p.tests or { }))) cachePkgs;
+
   buildOutputs = concatMap outputsOf buildPkgs;
-  cacheOutputs = concatMap outputsOf cachePkgs;
+  cacheOutputs = concatMap outputsOf (cachePkgs ++ testPkgs);
 }
