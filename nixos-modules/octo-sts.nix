@@ -23,7 +23,6 @@ let
   # The webhook only takes its secret from the environment (or a cloud secret
   # manager), and Environment= would put it in the store.
   webhookStart = pkgs.writeShellScript "octo-sts-webhook-start" ''
-    export APP_SECRET_CERTIFICATE_FILE="$CREDENTIALS_DIRECTORY/app.pem"
     GITHUB_WEBHOOK_SECRET=$(< "$CREDENTIALS_DIRECTORY/webhook-secret")
     export GITHUB_WEBHOOK_SECRET
     exec ${lib.getExe' cfg.package "octo-sts-webhook"}
@@ -284,6 +283,9 @@ in
         environment = {
           PORT = toString cfg.webhook.port;
           GITHUB_APP_IDS = toString cfg.webhook.appId;
+          # %d is systemd's credentials directory, holding the LoadCredential
+          # files.
+          APP_SECRET_CERTIFICATE_FILE = "%d/app.pem";
           GITHUB_WEBHOOK_ORGANIZATION_FILTER = lib.concatStringsSep "," cfg.webhook.organizations;
           METRICS = "false";
         } // cfg.environment;
