@@ -89,7 +89,7 @@ in
 
     port = lib.mkOption {
       type = lib.types.port;
-      default = 8080;
+      default = 20095;
       description = ''
         Port for plain HTTP (and gRPC). octo-sts listens on every interface
         with no TLS, so leave this closed in the firewall and expose it
@@ -178,17 +178,12 @@ in
       enable = lib.mkEnableOption ''
         the octo-sts webhook, which validates the trust policies a push or
         pull request changes, and reports the result as a check run named
-        "Trust Policy Validation".
-
-        It needs a GitHub App with read access to contents and pull requests
-        and write access to checks, subscribed to the `pull_request`, `push`,
-        `check_suite` and `check_run` events, and installed on the
-        repositories holding policies
+        "Trust Policy Validation"
       '';
 
       port = lib.mkOption {
         type = lib.types.port;
-        default = 8081;
+        default = 20096;
         description = ''
           Port for the webhook's plain HTTP, with the same caveats as
           {option}`services.octo-sts.port`.
@@ -202,6 +197,13 @@ in
           check runs as. It can be one of {option}`services.octo-sts.apps`,
           but a separate App keeps `checks: write` and the webhook
           subscription away from the identities that mint tokens.
+
+          The App needs read access to contents and pull requests and write
+          access to checks. It should be subscribed to the `pull_request`,
+          `push`, `check_suite` and `check_run` events, and installed on the
+          repositories holding policies. With
+          {option}`services.octo-sts.configureNginx`, its webhook URL is
+          `https://<domain>/webhook`.
         '';
       };
 
@@ -214,7 +216,10 @@ in
         type = lib.types.path;
         description = ''
           File holding the App's webhook secret, which GitHub signs
-          deliveries with. Passed as a systemd credential.
+          deliveries with. Passed as a systemd credential, so it can stay
+          readable by root only. Generate one with e.g.
+          `(umask 077; openssl rand -hex 32 > /run/secrets/octo-sts-webhook)`
+          and paste the same string into the App's settings.
         '';
       };
 
@@ -229,8 +234,15 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
+  config = lib.mkMerge [
     {
+      assertions = [{
+        assertion = cfg.webhook.enable -> cfg.enable;
+        message = "services.octo-sts.webhook.enable needs services.octo-sts.enable";
+      }];
+    }
+
+    (lib.mkIf cfg.enable {
       systemd.services.octo-sts = {
         description = "octo-sts, a security token service for GitHub";
         wantedBy = [ "multi-user.target" ];
@@ -272,9 +284,9 @@ in
       };
 
       networking.firewall.allowedTCPPorts = lib.mkIf cfg.configureNginx [ 80 443 ];
-    }
+    })
 
-    (lib.mkIf cfg.webhook.enable {
+    (lib.mkIf (cfg.enable && cfg.webhook.enable) {
       systemd.services.octo-sts-webhook = {
         description = "octo-sts webhook, validating trust policies in GitHub check runs";
         wantedBy = [ "multi-user.target" ];
@@ -298,9 +310,12 @@ in
         };
       };
 
-      services.nginx.virtualHosts.${cfg.domain}.locations."= /webhook" = lib.mkIf cfg.configureNginx {
-        proxyPass = "http://127.0.0.1:${toString cfg.webhook.port}/";
+      # The mkIf has to be above virtualHosts: below it, the definition still
+      # creates the virtual host, just without this location.
+      services.nginx = lib.mkIf cfg.configureNginx {
+        virtualHosts.${cfg.domain}.locations."= /webhook".proxyPass =
+          "http://127.0.0.1:${toString cfg.webhook.port}/";
       };
     })
-  ]);
+  ];
 }

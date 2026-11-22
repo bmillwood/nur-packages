@@ -37,21 +37,27 @@ testers.runNixOSTest {
     };
   };
 
-  testScript = ''
+  testScript = { nodes, ... }:
+    let
+      cfg = nodes.machine.services.octo-sts;
+      port = toString cfg.port;
+      webhookPort = toString cfg.webhook.port;
+    in
+    ''
     machine.wait_for_unit("octo-sts.service")
-    machine.wait_for_open_port(8080)
-    machine.succeed("curl -sf http://localhost:8080/")
+    machine.wait_for_open_port(${port})
+    machine.succeed("curl -sf http://localhost:${port}/")
     machine.succeed(
       "curl -s -H 'Authorization: Bearer x.y.z' "
-      "'http://localhost:8080/sts/exchange?scope=a/b&identity=c' "
+      "'http://localhost:${port}/sts/exchange?scope=a/b&identity=c' "
       "| grep -q 'invalid bearer token'"
     )
 
     import hmac, hashlib, shlex
 
     machine.wait_for_unit("octo-sts-webhook.service")
-    machine.wait_for_open_port(8081)
-    machine.succeed("curl -sf http://localhost:8081/healthcheck")
+    machine.wait_for_open_port(${webhookPort})
+    machine.succeed("curl -sf http://localhost:${webhookPort}/healthcheck")
 
     def ping_status(secret):
         body = '{"zen": "Keep it logically awesome.", "hook_id": 1}'
@@ -60,7 +66,7 @@ testers.runNixOSTest {
             "curl -s -o /dev/null -w '%{http_code}' "
             "-H 'Content-Type: application/json' -H 'X-GitHub-Event: ping' "
             f"-H 'X-Hub-Signature-256: sha256={signature}' "
-            f"--data {shlex.quote(body)} http://localhost:8081/"
+            f"--data {shlex.quote(body)} http://localhost:${webhookPort}/"
         )
 
     # Accepted and ignored, as the webhook does with any event it doesn't handle.
