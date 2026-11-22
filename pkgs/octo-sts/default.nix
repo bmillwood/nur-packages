@@ -17,13 +17,14 @@ buildGoModule rec {
 
   vendorHash = "sha256-eHGQwnshnC8YGcGtpLMwyTBlM/t/YD82mE/Bmp2oB/g=";
 
-  # Only the token exchange service. The webhook (policy validation as PR
-  # check runs), probers and policy-cleanup job are optional parts of
-  # Chainguard's own deployment.
-  subPackages = [ "cmd/app" ];
+  # The token exchange service and the webhook that validates trust policies
+  # as PR check runs. The probers and policy-cleanup job are parts of
+  # Chainguard's own deployment we have no use for.
+  subPackages = [ "cmd/app" "cmd/webhook" ];
 
   postInstall = ''
     mv $out/bin/app $out/bin/octo-sts
+    mv $out/bin/webhook $out/bin/octo-sts-webhook
   '';
 
   passthru.tests.nixos = callPackage ../../tests/octo-sts.nix { };
